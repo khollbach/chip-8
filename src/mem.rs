@@ -1,6 +1,6 @@
 use std::{
     fmt::{self, Debug},
-    ops::Index,
+    ops::{Index, IndexMut},
 };
 
 use crate::debug::{self, DebugHexByte};
@@ -31,6 +31,12 @@ impl Index<u16> for Mem {
 
     fn index(&self, index: u16) -> &Self::Output {
         &self.bytes[index as usize]
+    }
+}
+
+impl IndexMut<u16> for Mem {
+    fn index_mut(&mut self, index: u16) -> &mut Self::Output {
+        &mut self.bytes[index as usize]
     }
 }
 

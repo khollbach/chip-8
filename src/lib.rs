@@ -53,6 +53,7 @@ impl Chip8 {
                 0x00ee => self.pc = self.stack.pop(),
                 _ => err(),
             },
+            0x1 => self.pc = addr,
             0x2 => {
                 self.stack.push(self.pc);
                 self.pc = addr;
@@ -75,6 +76,37 @@ impl Chip8 {
             }
             0x6 => self.v[x] = k,
             0x7 => self.v[x] = self.v[x].wrapping_add(k),
+            0x8 => match n {
+                0x0 => self.v[x] = self.v[y],
+                0x1 => self.v[x] |= self.v[y],
+                0x2 => self.v[x] &= self.v[y],
+                0x3 => self.v[x] ^= self.v[y],
+                0x4 => {
+                    let (sum, carry) = self.v[x].overflowing_add(self.v[y]);
+                    self.v[x] = sum;
+                    self.v[0xf] = carry as u8;
+                }
+                0x5 => {
+                    let (diff, borrow) = self.v[x].overflowing_sub(self.v[y]);
+                    self.v[x] = diff;
+                    self.v[0xf] = !borrow as u8;
+                }
+                0x6 => {
+                    self.v[0xf] = self.v[y] % 2;
+                    self.v[x] = self.v[y] >> 1;
+                }
+                0x7 => {
+                    // y - x
+                    let (diff, borrow) = self.v[y].overflowing_sub(self.v[x]);
+                    self.v[x] = diff;
+                    self.v[0xf] = !borrow as u8;
+                }
+                0xe => {
+                    self.v[0xf] = if self.v[y] & 1 << 7 != 0 { 1 } else { 0 };
+                    self.v[x] = self.v[y] << 1;
+                }
+                _ => err(),
+            },
             0x9 => {
                 assert_eq!(n, 0);
                 if self.v[x] != self.v[y] {
@@ -83,7 +115,28 @@ impl Chip8 {
             }
             0xa => self.i = addr,
             0xd => self.draw_sprite(x, y, n),
-            0x1 => self.pc = addr,
+            0xf => match k {
+                0x1e => self.i += self.v[x] as u16,
+                0x33 => {
+                    let bcd = bcd_from_u8(self.v[x]);
+                    for offset in 0..bcd.len() {
+                        self.mem[self.i + offset as u16] = bcd[offset];
+                    }
+                }
+                0x55 => {
+                    // Write registers to memory.
+                    for reg in 0..=x {
+                        self.mem[self.i + reg as u16] = self.v[reg];
+                    }
+                }
+                0x65 => {
+                    // Read memory into registers.
+                    for reg in 0..=x {
+                        self.v[reg] = self.mem[self.i + reg as u16];
+                    }
+                }
+                _ => err(),
+            },
             _ => err(),
         }
     }
@@ -118,6 +171,20 @@ impl Chip8 {
     pub fn display(&self) {
         println!("{:?}", self.screen);
     }
+}
+
+/// Convert x to "big endian" binary coded decimal:
+/// [hundreds, tens, ones]
+fn bcd_from_u8(mut x: u8) -> [u8; 3] {
+    // Start with [ones, tens, hundred], and then reverse.
+    let mut digits = [0u8; 3];
+    for i in 0..3 {
+        digits[i] = x % 10;
+        x /= 10;
+    }
+
+    digits.reverse();
+    digits
 }
 
 /// Big endian byte (and bit) order.
