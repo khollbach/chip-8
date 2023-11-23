@@ -92,8 +92,10 @@ impl Chip8 {
                     self.v[0xf] = !borrow as u8;
                 }
                 0x6 => {
-                    self.v[0xf] = self.v[y] % 2;
-                    self.v[x] = self.v[y] >> 1;
+                    let shift = self.v[y] >> 1;
+                    let carry =  self.v[y] % 2;
+                    self.v[x] = shift;
+                    self.v[0xf] = carry;
                 }
                 0x7 => {
                     // y - x
@@ -102,8 +104,10 @@ impl Chip8 {
                     self.v[0xf] = !borrow as u8;
                 }
                 0xe => {
-                    self.v[0xf] = if self.v[y] & 1 << 7 != 0 { 1 } else { 0 };
-                    self.v[x] = self.v[y] << 1;
+                    let shift = self.v[y] << 1;
+                    let carry = if self.v[y] & 1 << 7 != 0 { 1 } else { 0 };
+                    self.v[x] = shift;
+                    self.v[0xf] = carry;
                 }
                 _ => err(),
             },
