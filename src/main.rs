@@ -7,11 +7,11 @@ fn main() -> Result<()> {
     io::stdin().read_to_end(&mut rom)?;
 
     let mut emu = Chip8::new(&rom);
-    for i in 0..100 {
+    for _ in 0..1_000_000 {
         emu.step();
-        eprintln!();
-        eprintln!("i={i} {emu:#04x?}");
     }
+    eprintln!();
+    eprintln!("{emu:#04x?}");
 
     Ok(())
 }

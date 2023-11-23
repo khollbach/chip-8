@@ -2,18 +2,20 @@ mod debug;
 mod mem;
 mod regs;
 mod screen;
+mod stack;
 
 use mem::Mem;
 use regs::Regs;
 use screen::Screen;
+use stack::Stack;
 
 use crate::screen::{Flip, Point};
 
 #[derive(Debug, Clone)]
 pub struct Chip8 {
     pc: u16,
-    sp: u8,
     i: u16,
+    stack: Stack,
     v: Regs,
     mem: Mem,
     screen: Screen,
@@ -23,8 +25,8 @@ impl Chip8 {
     pub fn new(rom: &[u8]) -> Self {
         Self {
             pc: Mem::ROM_START,
-            sp: 0, // todo
             i: 0,
+            stack: Stack::new(),
             v: Regs::new(),
             mem: Mem::new(rom),
             screen: Screen::default(),
@@ -48,10 +50,37 @@ impl Chip8 {
         match op {
             0x0 => match instr {
                 0x00e0 => self.screen = Screen::default(),
+                0x00ee => self.pc = self.stack.pop(),
                 _ => err(),
             },
+            0x2 => {
+                self.stack.push(self.pc);
+                self.pc = addr;
+            }
+            0x3 => {
+                if self.v[x] == k {
+                    self.pc += 2;
+                }
+            }
+            0x4 => {
+                if self.v[x] != k {
+                    self.pc += 2;
+                }
+            }
+            0x5 => {
+                assert_eq!(n, 0);
+                if self.v[x] == self.v[y] {
+                    self.pc += 2;
+                }
+            }
             0x6 => self.v[x] = k,
-            0x7 => self.v[x] += k,
+            0x7 => self.v[x] = self.v[x].wrapping_add(k),
+            0x9 => {
+                assert_eq!(n, 0);
+                if self.v[x] != self.v[y] {
+                    self.pc += 2;
+                }
+            }
             0xa => self.i = addr,
             0xd => self.draw_sprite(x, y, n),
             0x1 => self.pc = addr,
