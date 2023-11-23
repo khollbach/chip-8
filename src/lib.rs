@@ -38,23 +38,24 @@ impl Chip8 {
         let j = self.mem[self.pc];
         let k = self.mem[self.pc + 1];
         let instr = u16::from_be_bytes([j, k]);
+        let pc = self.pc;
+        let err = move || panic!("unimplemented: 0x{instr:04x} (pc=0x{pc:04x})");
         self.pc += 2;
 
+        let [op, x, y, n] = nibbles_from_u16(instr);
         let addr = instr & 0x0fff;
-        let x = j & 0x0f;
-        let y = (k & 0xf0) >> 4;
-        let n = k & 0x0f;
 
-        match instr {
-            0x00e0 => self.screen = Screen::default(),
-            0x6000..=0x6fff => self.v[x] = k,
-            0xa000..=0xafff => self.i = addr,
-            0xd000..=0xdfff => self.draw_sprite(x, y, n),
-            0x1000..=0x1fff => self.pc = addr,
-            _ => panic!(
-                "unimplemented instruction: 0x{instr:04x?} (pc:0x{:04x?})",
-                self.pc
-            ),
+        match op {
+            0x0 => match instr {
+                0x00e0 => self.screen = Screen::default(),
+                _ => err(),
+            },
+            0x6 => self.v[x] = k,
+            0x7 => self.v[x] += k,
+            0xa => self.i = addr,
+            0xd => self.draw_sprite(x, y, n),
+            0x1 => self.pc = addr,
+            _ => err(),
         }
     }
 
@@ -88,4 +89,13 @@ impl Chip8 {
     pub fn display(&self) {
         println!("{:?}", self.screen);
     }
+}
+
+/// Big endian byte (and bit) order.
+fn nibbles_from_u16(x: u16) -> [u8; 4] {
+    let a = (x & 0xf000) >> 4 * 3;
+    let b = (x & 0x0f00) >> 4 * 2;
+    let c = (x & 0x00f0) >> 4 * 1;
+    let d = (x & 0x000f) >> 4 * 0;
+    [a, b, c, d].map(|n| n as u8)
 }
