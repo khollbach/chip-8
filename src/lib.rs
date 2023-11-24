@@ -148,9 +148,18 @@ impl<'a> Chip8<'a> {
             0x7 => self.v[x] = self.v[x].wrapping_add(k),
             0x8 => match n {
                 0x0 => self.v[x] = self.v[y],
-                0x1 => self.v[x] |= self.v[y],
-                0x2 => self.v[x] &= self.v[y],
-                0x3 => self.v[x] ^= self.v[y],
+                0x1 => {
+                    self.v[x] |= self.v[y];
+                    self.v[0xf] = 0;
+                }
+                0x2 => {
+                    self.v[x] &= self.v[y];
+                    self.v[0xf] = 0;
+                }
+                0x3 => {
+                    self.v[x] ^= self.v[y];
+                    self.v[0xf] = 0;
+                }
                 0x4 => {
                     let (sum, carry) = self.v[x].overflowing_add(self.v[y]);
                     self.v[x] = sum;
