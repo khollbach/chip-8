@@ -54,7 +54,10 @@ fn run() -> Result<()> {
     let poll_timer = || timer.poll();
 
     let io = Chip8Io::new(render, is_key_pressed, get_key, poll_timer);
-    Chip8::new(&rom, io).run();
+    let cpu = Chip8::new(&rom, io);
+    eprintln!("{:#04x?}", &cpu);
+    cpu.run();
+    panic!();
 
     io::stdout()
         .execute(LeaveAlternateScreen)?

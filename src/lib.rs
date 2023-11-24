@@ -84,7 +84,7 @@ impl<'a> Chip8<'a> {
             }
 
             self.step();
-
+            eprintln!("{:#04x?}", &self);
             if (self.io.poll_timer)() {
                 self.dt = self.dt.saturating_sub(1);
                 self.st = self.st.saturating_sub(1);
@@ -101,13 +101,14 @@ impl<'a> Chip8<'a> {
 
     fn step(&mut self) {
         debug_assert!(self.pc < Mem::LEN);
-        debug_assert_eq!(self.pc % 2, 0);
+        // dbg!(self.pc);
+        // debug_assert_eq!(self.pc % 2, 0);
 
         let j = self.mem[self.pc];
         let k = self.mem[self.pc + 1];
         let instr = u16::from_be_bytes([j, k]);
         let old_pc = self.pc;
-        let err = move || panic!("unimplemented: 0x{instr:04x} (pc=0x{old_pc:04x})");
+        let err = || panic!("unimplemented: 0x{instr:04x} (pc=0x{old_pc:04x})");
         self.pc += 2;
 
         let [op, x, y, n] = nibbles_from_u16(instr);
@@ -212,7 +213,7 @@ impl<'a> Chip8<'a> {
                 0x15 => self.dt = self.v[x],
                 0x18 => self.st = self.v[x],
                 0x1e => self.i += self.v[x] as u16,
-                0x29 => todo!("set i to location of sprite for digit Vx"),
+                0x29 => self.i = self.v[x] as u16 * 5,
                 0x33 => {
                     let bcd = bcd_from_u8(self.v[x]);
                     for offset in 0..bcd.len() {
