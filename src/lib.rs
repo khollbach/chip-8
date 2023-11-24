@@ -84,7 +84,8 @@ impl<'a> Chip8<'a> {
             }
 
             self.step();
-            eprintln!("{:#04x?}", &self);
+            //eprintln!("{:#04x?}", self);
+
             if (self.io.poll_timer)() {
                 self.dt = self.dt.saturating_sub(1);
                 self.st = self.st.saturating_sub(1);
@@ -101,8 +102,7 @@ impl<'a> Chip8<'a> {
 
     fn step(&mut self) {
         debug_assert!(self.pc < Mem::LEN);
-        // dbg!(self.pc);
-        // debug_assert_eq!(self.pc % 2, 0);
+        debug_assert_eq!(self.pc % 2, 0);
 
         let j = self.mem[self.pc];
         let k = self.mem[self.pc + 1];
@@ -213,6 +213,7 @@ impl<'a> Chip8<'a> {
                 0x15 => self.dt = self.v[x],
                 0x18 => self.st = self.v[x],
                 0x1e => self.i += self.v[x] as u16,
+                // todo: refactor this to be less magical
                 0x29 => self.i = self.v[x] as u16 * 5,
                 0x33 => {
                     let bcd = bcd_from_u8(self.v[x]);
