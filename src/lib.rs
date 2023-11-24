@@ -235,12 +235,14 @@ impl<'a> Chip8<'a> {
                     for reg in 0..=x {
                         self.mem[self.i + reg as u16] = self.v[reg];
                     }
+                    self.i += x as u16 + 1;
                 }
                 0x65 => {
                     // Read memory into registers.
                     for reg in 0..=x {
                         self.v[reg] = self.mem[self.i + reg as u16];
                     }
+                    self.i += x as u16 + 1;
                 }
                 _ => err(),
             },
