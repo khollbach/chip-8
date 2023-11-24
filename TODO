@@ -1,0 +1,11 @@
+    TODOs
+
+[ ] Pass the Quirks test for CHIP-8
+[ ] Pass the Keypad test
+    (1 and 2 seem fine; 3 (getkey) says "X; not halting")
+
+Keyboard tests work in Kitty terminal, but only on the second time. Maybe related to the fact that we're not reseting everything about the terminal? Look into this...
+
+Terminal weirdness when after exiting. Seems like we're not fully reseting the state of the terminal? to-do: look into this.
+
+

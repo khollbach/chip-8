@@ -183,24 +183,54 @@ impl KeyboardState {
 /// I've chosen to map the 4x4 square from `7` through `/` on the physical
 /// keyboard. All other keycodes return `None`.
 fn keycode_to_chip8(c: char) -> Option<u8> {
+    // let key = match c {
+    //     '7' | '&' => 0x1,
+    //     '8' | '*' => 0x2,
+    //     '9' | '(' => 0x3,
+    //     'u' | 'U' => 0x4,
+    //     'i' | 'I' => 0x5,
+    //     'o' | 'O' => 0x6,
+    //     'j' | 'J' => 0x7,
+    //     'k' | 'K' => 0x8,
+    //     'l' | 'L' => 0x9,
+
+    //     'm' | 'M' => 0xa,
+    //     ',' | '<' => 0x0,
+    //     '.' | '>' => 0xb,
+
+    //     '0' | ')' => 0xc,
+    //     'p' | 'P' => 0xd,
+    //     ';' | ':' => 0xe,
+    //     '/' | '?' => 0xf,
+
+    //     _ => return None,
+    // };
+    // Some(key)
+
+    // TODO: hacky workaround for my weird keyboard setup.
+    // Change this back at some point...
+    workman_keycode_to_chip8(c)
+}
+
+fn workman_keycode_to_chip8(c: char) -> Option<u8> {
     let key = match c {
         '7' | '&' => 0x1,
         '8' | '*' => 0x2,
         '9' | '(' => 0x3,
-        'u' | 'U' => 0x4,
-        'i' | 'I' => 0x5,
-        'o' | 'O' => 0x6,
-        'j' | 'J' => 0x7,
-        'k' | 'K' => 0x8,
-        'l' | 'L' => 0x9,
+        'f' | 'F' => 0x4,
+        'u' | 'U' => 0x5,
+        'p' | 'P' => 0x6,
+        'n' | 'N' => 0x7,
+        'e' | 'E' => 0x8,
+        'o' | 'O' => 0x9,
 
-        'm' | 'M' => 0xa,
+        'l' | 'L' => 0xa,
         ',' | '<' => 0x0,
         '.' | '>' => 0xb,
 
         '0' | ')' => 0xc,
-        'p' | 'P' => 0xd,
-        ';' | ':' => 0xe,
+        ';' | ':' => 0xd,
+        'i' | 'I' => 0xe,
         '/' | '?' => 0xf,
 
         _ => return None,
