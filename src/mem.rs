@@ -26,6 +26,8 @@ impl Mem {
         let digits_rom: Vec<_> = DIGITS.into_iter().flatten().collect();
         bytes[..digits_rom.len()].copy_from_slice(&digits_rom);
 
+        bytes[0x1ff] = 1; // todo: hack to test Quirks ROM
+
         Self { bytes }
     }
 }

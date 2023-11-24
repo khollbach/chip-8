@@ -149,6 +149,9 @@ impl KeyboardState {
         };
 
         // Bail on ctrl+c.
+        //
+        // Note that this only gets hit if the program asks for input. One
+        // possible fix is to have a separate thread that handles io.
         if matches!(c, 'c' | 'C') && e.modifiers.contains(KeyModifiers::CONTROL) && pressed {
             panic!("control-c pressed");
         }
