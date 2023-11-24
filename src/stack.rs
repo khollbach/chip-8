@@ -3,14 +3,18 @@ pub struct Stack {
     values: Vec<u16>,
 }
 
+const CAPACITY: usize = 16;
+
 impl Stack {
     pub fn new() -> Self {
-        Self { values: vec![] }
+        Self {
+            values: Vec::with_capacity(CAPACITY),
+        }
     }
 
     /// Panics on overflow.
     pub fn push(&mut self, value: u16) {
-        if self.values.len() >= 16 {
+        if self.values.len() >= CAPACITY {
             panic!("stack overflow");
         }
         self.values.push(value);

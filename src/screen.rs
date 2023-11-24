@@ -2,8 +2,10 @@ use std::fmt::{self, Debug};
 
 #[derive(Clone)]
 pub struct Screen {
-    rows: [[bool; Self::WIDTH]; Self::HEIGHT],
+    rows: ScreenBuffer,
 }
+
+pub type ScreenBuffer = [[bool; Screen::WIDTH]; Screen::HEIGHT];
 
 #[derive(Debug, Clone, Copy)]
 pub struct Point {
@@ -13,13 +15,17 @@ pub struct Point {
 
 impl Screen {
     const DIMS: Point = Point { x: 64, y: 32 };
-    const WIDTH: usize = Self::DIMS.x as usize;
-    const HEIGHT: usize = Self::DIMS.y as usize;
+    pub const WIDTH: usize = Self::DIMS.x as usize;
+    pub const HEIGHT: usize = Self::DIMS.y as usize;
 
     fn new() -> Self {
         Self {
             rows: [[false; Self::WIDTH]; Self::HEIGHT],
         }
+    }
+
+    pub fn rows(&self) -> &ScreenBuffer {
+        &self.rows
     }
 
     pub fn flip(&mut self, p: Point) -> Flip {

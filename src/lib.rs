@@ -4,44 +4,110 @@ mod regs;
 mod screen;
 mod stack;
 
+use std::fmt::{self, Debug};
+
 use mem::Mem;
 use regs::Regs;
-use screen::Screen;
 use stack::Stack;
 
 use crate::screen::{Flip, Point};
 
-#[derive(Debug, Clone)]
-pub struct Chip8 {
+pub use screen::Screen;
+
+#[derive(Debug)]
+pub struct Chip8<'a> {
     pc: u16,
     i: u16,
+    dt: u8,
+    st: u8,
     stack: Stack,
     v: Regs,
     mem: Mem,
     screen: Screen,
+    io: Chip8Io<'a>,
 }
 
-impl Chip8 {
-    pub fn new(rom: &[u8]) -> Self {
+pub struct Chip8Io<'a> {
+    pub render: Box<dyn FnMut(&Screen) + 'a>,
+    /// Is the given key currently pressed? Keycodes are `0x0..=0xf`.
+    pub is_key_pressed: Box<dyn FnMut(u8) -> bool + 'a>,
+    /// Block until any key becomes pressed. Return that keycode.
+    pub get_key: Box<dyn FnMut() -> u8 + 'a>,
+    /// Return true if a timer "tick" occurred between the previous call to
+    /// `poll_timer` and now.
+    pub poll_timer: Box<dyn FnMut() -> bool + 'a>,
+}
+
+impl<'a> Chip8Io<'a> {
+    pub fn new(
+        render: impl FnMut(&Screen) + 'a,
+        is_key_pressed: impl FnMut(u8) -> bool + 'a,
+        get_key: impl FnMut() -> u8 + 'a,
+        poll_timer: impl FnMut() -> bool + 'a,
+    ) -> Self {
+        Self {
+            render: Box::new(render),
+            is_key_pressed: Box::new(is_key_pressed),
+            get_key: Box::new(get_key),
+            poll_timer: Box::new(poll_timer),
+        }
+    }
+}
+
+impl<'a> Debug for Chip8Io<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Chip8Io").finish()
+    }
+}
+
+impl<'a> Chip8<'a> {
+    pub fn new(rom: &[u8], io: Chip8Io<'a>) -> Self {
         Self {
             pc: Mem::ROM_START,
             i: 0,
+            dt: 0,
+            st: 0,
             stack: Stack::new(),
             v: Regs::new(),
             mem: Mem::new(rom),
             screen: Screen::default(),
+            io,
         }
     }
 
-    pub fn step(&mut self) {
+    pub fn run(mut self) {
+        loop {
+            // Detect "halt" instruction.
+            // This is a hack to make testing easier.
+            if self.would_halt() {
+                break;
+            }
+
+            self.step();
+
+            if (self.io.poll_timer)() {
+                self.dt = self.dt.saturating_sub(1);
+                self.st = self.st.saturating_sub(1);
+            }
+        }
+    }
+
+    fn would_halt(&self) -> bool {
+        let j = self.mem[self.pc];
+        let k = self.mem[self.pc + 1];
+        let instr = u16::from_be_bytes([j, k]);
+        instr == 0x1000 | self.pc
+    }
+
+    fn step(&mut self) {
         debug_assert!(self.pc < Mem::LEN);
         debug_assert_eq!(self.pc % 2, 0);
 
         let j = self.mem[self.pc];
         let k = self.mem[self.pc + 1];
         let instr = u16::from_be_bytes([j, k]);
-        let pc = self.pc;
-        let err = move || panic!("unimplemented: 0x{instr:04x} (pc=0x{pc:04x})");
+        let old_pc = self.pc;
+        let err = move || panic!("unimplemented: 0x{instr:04x} (pc=0x{old_pc:04x})");
         self.pc += 2;
 
         let [op, x, y, n] = nibbles_from_u16(instr);
@@ -49,7 +115,10 @@ impl Chip8 {
 
         match op {
             0x0 => match instr {
-                0x00e0 => self.screen = Screen::default(),
+                0x00e0 => {
+                    self.screen = Screen::default();
+                    (self.io.render)(&self.screen);
+                }
                 0x00ee => self.pc = self.stack.pop(),
                 _ => err(),
             },
@@ -93,7 +162,7 @@ impl Chip8 {
                 }
                 0x6 => {
                     let shift = self.v[y] >> 1;
-                    let carry =  self.v[y] % 2;
+                    let carry = self.v[y] % 2;
                     self.v[x] = shift;
                     self.v[0xf] = carry;
                 }
@@ -118,9 +187,32 @@ impl Chip8 {
                 }
             }
             0xa => self.i = addr,
-            0xd => self.draw_sprite(x, y, n),
+            0xb => self.pc = addr + self.v[0] as u16,
+            0xc => self.v[x] = rand::random::<u8>() & k,
+            0xd => {
+                self.draw_sprite(x, y, n);
+                (self.io.render)(&self.screen);
+            }
+            0xe => match k {
+                0x9e => {
+                    if (self.io.is_key_pressed)(self.v[x]) {
+                        self.pc += 2;
+                    }
+                }
+                0xa1 => {
+                    if !(self.io.is_key_pressed)(self.v[x]) {
+                        self.pc += 2;
+                    }
+                }
+                _ => err(),
+            },
             0xf => match k {
+                0x07 => self.v[x] = self.dt,
+                0x0a => self.v[x] = (self.io.get_key)(),
+                0x15 => self.dt = self.v[x],
+                0x18 => self.st = self.v[x],
                 0x1e => self.i += self.v[x] as u16,
+                0x29 => todo!("set i to location of sprite for digit Vx"),
                 0x33 => {
                     let bcd = bcd_from_u8(self.v[x]);
                     for offset in 0..bcd.len() {
@@ -141,7 +233,7 @@ impl Chip8 {
                 }
                 _ => err(),
             },
-            _ => err(),
+            0x10.. => unreachable!(),
         }
     }
 
@@ -170,10 +262,6 @@ impl Chip8 {
                 }
             }
         }
-    }
-
-    pub fn display(&self) {
-        println!("{:?}", self.screen);
     }
 }
 
