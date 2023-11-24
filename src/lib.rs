@@ -257,14 +257,20 @@ impl<'a> Chip8<'a> {
         assert!(self.i + n as u16 <= Mem::LEN);
         let n = n as i8;
 
-        let x = self.v[x] as i8;
-        let y = self.v[y] as i8;
+        // Initial xy coords wrap as expected.
+        let xy = Point::from((self.v[x] as i8, self.v[y] as i8)).wrap();
         self.v[0xf] = 0;
 
         for dy in 0..n {
             let sprite_row = self.mem[self.i + dy as u16];
             for dx in 0..8 {
-                let pos = Point { x, y }.wrapping_add((dx, dy).into());
+                let pos = xy + (dx, dy).into();
+
+                // Quirk: ignore pixels that would wrap.
+                // This causes sprites drawn at the borders to be "clipped".
+                if !pos.in_bounds() {
+                    continue;
+                }
 
                 let bit = 1 << (7 - dx);
                 if sprite_row & bit != 0 {

@@ -1,4 +1,7 @@
-use std::fmt::{self, Debug};
+use std::{
+    fmt::{self, Debug},
+    ops::Add,
+};
 
 #[derive(Clone)]
 pub struct Screen {
@@ -69,17 +72,29 @@ impl Debug for Screen {
 }
 
 impl Point {
-    pub fn wrapping_add(self, other: Self) -> Self {
+    #[must_use]
+    pub fn wrap(self) -> Self {
         Self {
-            x: (self.x + other.x).rem_euclid(Screen::DIMS.x),
-            y: (self.y + other.y).rem_euclid(Screen::DIMS.y),
+            x: self.x.rem_euclid(Screen::DIMS.x),
+            y: self.y.rem_euclid(Screen::DIMS.y),
         }
     }
 
-    fn in_bounds(self) -> bool {
+    pub fn in_bounds(self) -> bool {
         let x = 0 <= self.x && self.x < Screen::DIMS.x;
         let y = 0 <= self.y && self.y < Screen::DIMS.y;
         x && y
+    }
+}
+
+impl Add for Point {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
     }
 }
 
