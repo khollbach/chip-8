@@ -34,7 +34,22 @@ NOW:
     [x] misc cleanup: move most of the code in lib.rs into cpu.rs
         then move mem,regs,stack into src/cpu/*
     [x] move draw_sprite impl to the right place in the code
-[ ] test it out
+[x] test it out
+    NOTE: it's not working right until we:
+    1. run an instance of the emulator
+    2. `killall chip-8` to kill it without resetting the terminal
+        (?)
+    3. run it a second time (and then it seems to work)
+    The symptoms are keyboard-related.
+
+NEXT:
+* We appear to have regressed the quirks test: display wait fails
+* We also still don't pass the getkey test -- we get "not halting"
+
+[x] debug quirks / display-wait test
+    OK. fixed it.
+
+[ ] debug getkey test
 
 ---
 

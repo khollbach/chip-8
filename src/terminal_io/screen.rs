@@ -1,4 +1,7 @@
-use crate::cpu::{screen::{Point, DIMS}, io::DrawSprite};
+use crate::cpu::{
+    io::DrawSprite,
+    screen::{Point, DIMS},
+};
 use std::fmt::{self, Debug};
 
 const WIDTH: usize = DIMS.x as usize;

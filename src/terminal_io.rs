@@ -14,6 +14,7 @@ use crossterm::{
     terminal::{self, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
+use std::thread;
 use std::{
     fmt::{self, Display},
     io, panic,
@@ -91,6 +92,10 @@ impl Chip8Io for TerminalIo {
     fn draw_sprite(&mut self, pos: Point, sprite: &[u8]) -> DrawSprite {
         let collision = self.screen.draw_sprite(pos, sprite);
         self.render().unwrap();
+
+        // Quirk: wait for the next tick of the display timer before returning.
+        self.timer.wait();
+
         collision
     }
 
@@ -152,13 +157,12 @@ impl Timer {
         }
     }
 
-    // TODO: Do we need this any more?
-    // /// Block waiting until the next call to `poll` will return `true`.
-    // fn wait(&self) {
-    //     let target = self.previous_tick + Self::TIME_BETWEEN_TICKS;
-    //     let duration = target.saturating_duration_since(Instant::now());
-    //     thread::sleep(duration);
-    // }
+    /// Block waiting until the next call to `poll` will return `true`.
+    fn wait(&self) {
+        let target = self.previous_tick + Self::TIME_BETWEEN_TICKS;
+        let duration = target.saturating_duration_since(Instant::now());
+        thread::sleep(duration);
+    }
 
     fn poll(&mut self) -> bool {
         if self.previous_tick.elapsed() >= Self::TIME_BETWEEN_TICKS {
