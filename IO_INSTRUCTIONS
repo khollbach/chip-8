@@ -49,7 +49,15 @@ NEXT:
 [x] debug quirks / display-wait test
     OK. fixed it.
 
-[ ] debug getkey test
+[x] debug getkey test
+    * oh yeah, we haven't actually changed the timer logic yet
+    * We'll need to update it; this might also be a good time to
+      refactor.
+Mostly works!
+* I can still get "not halting" if I mash though..
+
+[ ] Let's look into making our get_key quirk-accurate,
+    and see if that changes things.
 
 ---
 

@@ -1,7 +1,7 @@
 mod screen;
 
 use self::screen::Screen;
-use crate::cpu::io::{Chip8Io, DrawSprite};
+use crate::cpu::io::{Chip8Io, DrawSprite, TIME_BETWEEN_TICKS_NS};
 use crate::cpu::screen::Point;
 use anyhow::Result;
 use crossterm::{
@@ -26,7 +26,7 @@ use std::{
 pub struct TerminalIo {
     screen: Screen,
     kb: KeyboardState,
-    timer: Timer,
+    previous_tick: Instant,
     dt: u8,
     st: u8,
 }
@@ -45,7 +45,7 @@ impl TerminalIo {
         Ok(Self {
             screen: Screen::default(),
             kb: KeyboardState::default(),
-            timer: Timer::new(),
+            previous_tick: Instant::now(),
             dt: 0,
             st: 0,
         })
@@ -72,11 +72,20 @@ impl<'a> Display for DisplayScreen<'a> {
     }
 }
 
+const TIME_BETWEEN_TICKS: Duration = Duration::from_nanos(TIME_BETWEEN_TICKS_NS);
+
 impl Chip8Io for TerminalIo {
     fn update(&mut self) {
-        if self.timer.poll() {
+        // Perform new ticks of the delay timer and sound timer.
+        //
+        // We may end up doing multiple ticks during a single `update`; e.g., if
+        // we were blocked waiting for `blocking_get_key`, and a long time
+        // passed.
+
+        while self.previous_tick.elapsed() >= TIME_BETWEEN_TICKS {
             self.dt = self.dt.saturating_sub(1);
             self.st = self.st.saturating_sub(1);
+            self.previous_tick += TIME_BETWEEN_TICKS;
         }
     }
 
@@ -93,8 +102,8 @@ impl Chip8Io for TerminalIo {
         let collision = self.screen.draw_sprite(pos, sprite);
         self.render().unwrap();
 
-        // Quirk: wait for the next tick of the display timer before returning.
-        self.timer.wait();
+        // Quirk: wait for the next tick of an imaginary "display timer" before returning.
+        sleep_until(self.previous_tick + TIME_BETWEEN_TICKS);
 
         collision
     }
@@ -142,36 +151,8 @@ impl Drop for TerminalIo {
     }
 }
 
-#[derive(Debug)]
-struct Timer {
-    previous_tick: Instant,
-}
-
-impl Timer {
-    /// 60 Hz.
-    const TIME_BETWEEN_TICKS: Duration = Duration::from_nanos(10_u64.pow(9) / 60);
-
-    fn new() -> Self {
-        Self {
-            previous_tick: Instant::now(),
-        }
-    }
-
-    /// Block waiting until the next call to `poll` will return `true`.
-    fn wait(&self) {
-        let target = self.previous_tick + Self::TIME_BETWEEN_TICKS;
-        let duration = target.saturating_duration_since(Instant::now());
-        thread::sleep(duration);
-    }
-
-    fn poll(&mut self) -> bool {
-        if self.previous_tick.elapsed() >= Self::TIME_BETWEEN_TICKS {
-            self.previous_tick = Instant::now();
-            true
-        } else {
-            false
-        }
-    }
+fn sleep_until(deadline: Instant) {
+    thread::sleep(deadline.saturating_duration_since(Instant::now()));
 }
 
 // TODO at some point: refactor KeyboardState to fit more harmoniously

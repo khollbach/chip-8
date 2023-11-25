@@ -2,6 +2,11 @@ use std::fmt::Debug;
 
 use super::Point;
 
+/// Nanosecond duration for the delay timer and sound timer "ticks".
+///
+/// Frequency: 60 Hz.
+pub const TIME_BETWEEN_TICKS_NS: u64 = 10_u64.pow(9) / 60;
+
 /// The input/output methods needed by the CHIP-8 interpreter.
 pub trait Chip8Io: Debug {
     /// This method gets called periodically (currently after every instruction).
