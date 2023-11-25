@@ -126,7 +126,6 @@ impl<'a> Display for DisplayScreen<'a> {
 #[derive(Debug, Default)]
 struct KeyboardState {
     pressed: [bool; 16],
-    most_recently_pressed: u8,
 }
 
 impl KeyboardState {
@@ -141,50 +140,61 @@ impl KeyboardState {
             if !event::poll(Duration::from_secs(0))? {
                 return Ok(());
             }
-            self.update_state(event::read()?);
+            self.update_state(&event::read()?);
         }
     }
 
-    fn update_state(&mut self, terminal_event: Event) {
-        let Event::Key(e) = terminal_event else {
-            return;
-        };
-        let KeyCode::Char(c) = e.code else { return };
-        let pressed = match e.kind {
-            KeyEventKind::Press | KeyEventKind::Repeat => true,
-            KeyEventKind::Release => false,
-        };
-
-        // Bail on ctrl+c.
-        //
-        // Note that this only gets hit if the program asks for input. One
-        // possible fix is to have a separate thread that handles io.
-        if matches!(c, 'c' | 'C') && e.modifiers.contains(KeyModifiers::CONTROL) && pressed {
-            panic!("control-c pressed");
-        }
-
-        if let Some(k) = keycode_to_chip8(c) {
+    fn update_state(&mut self, e: &Event) {
+        if let Some((k, pressed)) = filter_event(e) {
             self.pressed[k as usize] = pressed;
-            if pressed {
-                self.most_recently_pressed = k;
-            }
         }
     }
 
-    /// Block waiting for one of the 16 keys to become pressed, then return the
-    /// keycode (0x0..=0xf) of that key.
+    /// Block waiting for one of the 16 keys to be *released*. (This is a
+    /// deliberate quirk.)
     fn get_key(&mut self) -> Result<u8> {
+        // Catch up on state changes.
         self.consume_pending_input_events()?;
 
+        // Blocking updates, until there's a key release.
         loop {
-            if self.pressed[self.most_recently_pressed as usize] {
-                return Ok(self.most_recently_pressed);
-            }
-            debug_assert!(self.pressed.iter().all(|p| !p));
+            let e = event::read()?;
+            self.update_state(&e);
 
-            self.update_state(event::read()?);
+            if let Some((k, false)) = filter_event(&e) {
+                return Ok(k);
+            }
         }
     }
+}
+
+/// If this is a relevant key-press/release event, return:
+/// * `(chip8_keycode, pressed)`
+fn filter_event(terminal_event: &Event) -> Option<(u8, bool)> {
+    let Event::Key(e) = terminal_event else {
+        return None;
+    };
+    let KeyCode::Char(c) = e.code else {
+        return None;
+    };
+    let pressed = match e.kind {
+        KeyEventKind::Press | KeyEventKind::Repeat => true,
+        KeyEventKind::Release => false,
+    };
+
+    // Hack: bail on ctrl+c.
+    //
+    // Note that this only gets hit if the program asks for input. One
+    // possible fix is to have a separate thread that handles io.
+    if matches!(c, 'c' | 'C') && e.modifiers.contains(KeyModifiers::CONTROL) && pressed {
+        panic!("control-c pressed");
+    }
+
+    let Some(k) = keycode_to_chip8(c) else {
+        return None;
+    };
+
+    Some((k, pressed))
 }
 
 /// Translate a key from the physical keyboard into one of the 16 virtual keys
