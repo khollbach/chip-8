@@ -26,9 +26,7 @@ pub trait Chip8Io: Debug {
 
     /// Block until any key gets pressed. Return that keycode.
     ///
-    /// Quirk: this should wait until some key:
-    /// 1. becomes newly pressed
-    /// 2. later becomes released
+    /// Quirk: this should wait until some key gets *released*.
     fn blocking_get_key(&mut self) -> u8;
 
     fn read_delay_timer(&mut self) -> u8;

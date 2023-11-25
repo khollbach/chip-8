@@ -1,21 +1,12 @@
 [x] Pass the Quirks test for CHIP-8
-[ ] Pass the Keypad test
-    (1 and 2 seem fine; 3 (getkey) says "X; not halting")
+[x] Pass the Keypad test
+[ ] figure out terminal weirdness (see below)
 
 ---
 
-NOTE (left off here!)
-
-The keypad test seems to have uncovered a bug in our timer implementation:
-* when we're blocking waiting for a key relase (get_key) we don't tick down the delay timer register!
-Make sure you understand the issue, and the desired behaviour; then think about how to fix it.
-
----
-
-Low-priority terminal-related non-sense:
-
-Keyboard tests work in Kitty terminal, but only on the second time. Maybe related to the fact that we're not reseting everything about the terminal? Look into this...
-
-Terminal weirdness when after exiting. Seems like we're not fully reseting the state of the terminal? to-do: look into this.
-
-Ctrl+c doesn't take effect unless the program polls input... how to fix?
+Keyboard tests work in Kitty terminal, but only on the second time. Maybe related to the fact that we're not reseting everything about the terminal?
+Update: now that we're resetting terminal config correctly, the required steps are:
+1. run an instance of the emulator
+2. `killall chip-8` to kill it without resetting the terminal
+    (?)
+3. run it a second time (and then it seems to work)

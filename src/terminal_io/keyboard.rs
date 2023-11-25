@@ -8,6 +8,7 @@ pub struct Keyboard {
 }
 
 impl Keyboard {
+    /// Panics if the user presses `ctrl+c`.
     pub fn update(&mut self) -> Result<()> {
         // Consume pending input events; update state.
         while event::poll(Duration::from_secs(0))? {
@@ -52,11 +53,6 @@ fn filter_event(terminal_event: &Event) -> Option<(u8, bool)> {
     };
 
     // Hack: bail on ctrl+c.
-    //
-    // Note that this only gets hit if the program asks for input. One
-    // possible fix is to have a separate thread that handles io.
-    //
-    // TODO: look into this further.
     if matches!(c, 'c' | 'C') && e.modifiers.contains(KeyModifiers::CONTROL) && pressed {
         panic!("control-c pressed");
     }
