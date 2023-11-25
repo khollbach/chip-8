@@ -31,8 +31,18 @@ pub struct TerminalIo {
 }
 
 impl TerminalIo {
-    // todo: should failure here cause auto-teardown? Think about this
     pub fn setup() -> Result<Self> {
+        // Note that we construct `this` before doing the setup steps. That way
+        // if one of them fails, we run the destructor, which attempts to undo
+        // the terminal configuration changes.
+        let this = Self {
+            screen: Screen::new(),
+            keyboard: Keyboard::default(),
+            previous_tick: Instant::now(),
+            dt: 0,
+            st: 0,
+        };
+
         terminal::enable_raw_mode()?;
         io::stdout()
             .execute(PushKeyboardEnhancementFlags(
@@ -41,13 +51,7 @@ impl TerminalIo {
             .execute(EnterAlternateScreen)?
             .execute(Clear(ClearType::All))?;
 
-        Ok(Self {
-            screen: Screen::new(),
-            keyboard: Keyboard::default(),
-            previous_tick: Instant::now(),
-            dt: 0,
-            st: 0,
-        })
+        Ok(this)
     }
 
     fn render(&self) -> Result<()> {
