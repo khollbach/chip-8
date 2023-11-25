@@ -1,9 +1,9 @@
 use std::{
     fmt::{self, Debug},
-    ops::{Index, IndexMut},
+    ops::{Index, IndexMut, Range},
 };
 
-use crate::debug::{self, DebugHexByte};
+use super::debug::{self, DebugHexByte};
 
 #[derive(Clone)]
 pub struct Mem {
@@ -23,8 +23,8 @@ impl Mem {
         bytes[rom_start..][..rom.len()].copy_from_slice(rom);
 
         // Load built-in sprites into memory starting at offset 0x000.
-        let digits_rom: Vec<_> = DIGITS.into_iter().flatten().collect();
-        bytes[..digits_rom.len()].copy_from_slice(&digits_rom);
+        let digits: Vec<_> = DIGITS.into_iter().flatten().collect();
+        bytes[..digits.len()].copy_from_slice(&digits);
 
         bytes[0x1ff] = 3; // todo: hack to test Keypad ROM
 
@@ -63,6 +63,14 @@ impl Index<u16> for Mem {
 impl IndexMut<u16> for Mem {
     fn index_mut(&mut self, index: u16) -> &mut Self::Output {
         &mut self.bytes[index as usize]
+    }
+}
+
+impl Index<Range<u16>> for Mem {
+    type Output = [u8];
+
+    fn index(&self, index: Range<u16>) -> &Self::Output {
+        &self.bytes[index.start as usize..index.end as usize]
     }
 }
 

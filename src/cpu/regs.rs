@@ -3,7 +3,7 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-use crate::debug;
+use super::debug;
 
 #[derive(Clone)]
 pub struct Regs {

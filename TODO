@@ -1,5 +1,3 @@
-    TODOs
-
 [x] Pass the Quirks test for CHIP-8
 [ ] Pass the Keypad test
     (1 and 2 seem fine; 3 (getkey) says "X; not halting")
@@ -10,7 +8,7 @@ NOTE (left off here!)
 
 The keypad test seems to have uncovered a bug in our timer implementation:
 * when we're blocking waiting for a key relase (get_key) we don't tick down the delay timer register!
-TODO: make sure you understand the issue, and the desired behaviour; then think about how to fix it.
+Make sure you understand the issue, and the desired behaviour; then think about how to fix it.
 
 ---
 
