@@ -59,7 +59,6 @@ impl<'a> Chip8<'a> {
 
     fn step(&mut self) {
         debug_assert!(self.pc < Mem::LEN);
-        debug_assert_eq!(self.pc % 2, 0);
 
         let j = self.mem[self.pc];
         let k = self.mem[self.pc + 1];
