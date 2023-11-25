@@ -14,7 +14,7 @@ use std::{
     cell::RefCell,
     fmt::{self, Display},
     io::{self, Read},
-    panic,
+    panic, thread,
     time::{Duration, Instant},
 };
 
@@ -50,10 +50,11 @@ fn run() -> Result<()> {
     let is_key_pressed = |k| kb.borrow_mut().is_key_pressed(k).unwrap();
     let get_key = || kb.borrow_mut().get_key().unwrap();
 
-    let mut timer = Timer::new();
-    let poll_timer = || timer.poll();
+    let timer = RefCell::new(Timer::new());
+    let poll_timer = || timer.borrow_mut().poll();
+    let await_timer = || timer.borrow().wait();
 
-    let io = Chip8Io::new(render, is_key_pressed, get_key, poll_timer);
+    let io = Chip8Io::new(render, is_key_pressed, get_key, poll_timer, await_timer);
     Chip8::new(&rom, io).run();
 
     io::stdout()
@@ -76,7 +77,8 @@ struct Timer {
 }
 
 impl Timer {
-    const FREQ_HZ: f64 = 60.;
+    /// 60 Hz.
+    const TIME_BETWEEN_TICKS: Duration = Duration::from_nanos(10_u64.pow(9) / 60);
 
     fn new() -> Self {
         Self {
@@ -84,10 +86,15 @@ impl Timer {
         }
     }
 
-    fn poll(&mut self) -> bool {
-        let time_between_ticks = Duration::from_secs_f64(1. / Self::FREQ_HZ);
+    /// Block waiting until the next call to `poll` will return `true`.
+    fn wait(&self) {
+        let target = self.previous_tick + Self::TIME_BETWEEN_TICKS;
+        let duration = target.saturating_duration_since(Instant::now());
+        thread::sleep(duration);
+    }
 
-        if self.previous_tick.elapsed() >= time_between_ticks {
+    fn poll(&mut self) -> bool {
+        if self.previous_tick.elapsed() >= Self::TIME_BETWEEN_TICKS {
             self.previous_tick = Instant::now();
             true
         } else {

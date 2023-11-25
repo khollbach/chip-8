@@ -36,6 +36,8 @@ pub struct Chip8Io<'a> {
     /// Return true if a timer "tick" occurred between the previous call to
     /// `poll_timer` and now.
     pub poll_timer: Box<dyn FnMut() -> bool + 'a>,
+    /// Block waiting until the next call to `poll_timer` will return `true`.
+    pub await_timer: Box<dyn FnMut() + 'a>,
 }
 
 impl<'a> Chip8Io<'a> {
@@ -44,12 +46,14 @@ impl<'a> Chip8Io<'a> {
         is_key_pressed: impl FnMut(u8) -> bool + 'a,
         get_key: impl FnMut() -> u8 + 'a,
         poll_timer: impl FnMut() -> bool + 'a,
+        await_timer: impl FnMut() + 'a,
     ) -> Self {
         Self {
             render: Box::new(render),
             is_key_pressed: Box::new(is_key_pressed),
             get_key: Box::new(get_key),
             poll_timer: Box::new(poll_timer),
+            await_timer: Box::new(await_timer),
         }
     }
 }
@@ -202,6 +206,7 @@ impl<'a> Chip8<'a> {
             0xd => {
                 self.draw_sprite(x, y, n);
                 (self.io.render)(&self.screen);
+                (self.io.await_timer)();
             }
             0xe => match k {
                 0x9e => {
