@@ -173,8 +173,7 @@ impl<'a> Chip8<'a> {
                 0x15 => self.io.write_delay_timer(self.v[x]),
                 0x18 => self.io.write_sound_timer(self.v[x]),
                 0x1e => self.i += self.v[x] as u16,
-                // todo: refactor this to be less magical
-                0x29 => self.i = self.v[x] as u16 * 5,
+                0x29 => self.i = Mem::sprite_offset(self.v[x]),
                 0x33 => {
                     let bcd = bcd_from_u8(self.v[x]);
                     for offset in 0..bcd.len() {

@@ -26,9 +26,15 @@ impl Mem {
         let digits: Vec<_> = DIGITS.into_iter().flatten().collect();
         bytes[..digits.len()].copy_from_slice(&digits);
 
-        bytes[0x1ff] = 3; // todo: hack to test Keypad ROM
-
         Self { bytes }
+    }
+
+    /// Where in memory is the sprite for this hex digit?
+    pub const fn sprite_offset(hex_digit: u8) -> u16 {
+        assert!(hex_digit <= 0xf);
+
+        // We load sprites starting at 0, and they're each 5 bytes wide.
+        hex_digit as u16 * 5
     }
 }
 

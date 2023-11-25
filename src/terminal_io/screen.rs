@@ -13,10 +13,14 @@ pub struct Screen {
 }
 
 impl Screen {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             rows: [[false; WIDTH]; HEIGHT],
         }
+    }
+
+    pub fn clear(&mut self) {
+        *self = Self::new();
     }
 
     pub fn draw_sprite(&mut self, top_left: Point, sprite: &[u8]) -> DrawSprite {
@@ -58,12 +62,6 @@ impl Screen {
         *pixel ^= true;
 
         was_high
-    }
-}
-
-impl Default for Screen {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

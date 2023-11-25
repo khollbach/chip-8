@@ -54,10 +54,15 @@ NEXT:
     * We'll need to update it; this might also be a good time to
       refactor.
 Mostly works!
-* I can still get "not halting" if I mash though..
+* I can still get "not halting" if I mash though
 
-[ ] Let's look into making our get_key quirk-accurate,
+[x] Let's look into making our get_key quirk-accurate,
     and see if that changes things.
+    * OK, so I was able to make the Octo emulator yield
+      the "not halting" message by mashing; so I'll assume
+      our behaviour is actually fine.
+
+[x] do a bit of refactoring -- e.g. src/terminal_io/keyboard
 
 ---
 
